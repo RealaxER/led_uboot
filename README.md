@@ -336,7 +336,10 @@ demo_leds {
 	};
 };
 ```
-
+## Check build successfully
+```bash
+find -name demo_led.o
+```
 ## Step to run demo
 ### 1. Compile the new u-boot with demo-led driver in it
 ```
