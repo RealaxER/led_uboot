@@ -7,8 +7,10 @@ configs/am335x_evm_defconfig
 ```
 
 ``` 
+CONFIG_DM=y
 CONFIG_DM_GPIO=y
 CONFIG_LED=y  
+CONFIG_LED_GPIO=y
 CONFIG_DEMO_LED=y  
 CONFIG_CMD_DEMO_LED=y  
 ```
@@ -20,7 +22,7 @@ cd /bbb/u-boot/drivers
 ```
 ### Makefile device driver 
 ```
-obj-$(CONFIG_DEMO_LED) += demo_led/
+obj-$(CONFIG_$(SPL_TPL_)DEMO_LED) += demo_led/
 ```
 ### Kconfig device driver 
 ```
@@ -33,7 +35,7 @@ cd demo_led/
 ```
 ### Makefile demo_led
 ```make
-obj-$(CONFIG_$(SPL_)_DEMO_LED) += demo_led.o
+obj-$(CONFIG_$(SPL_TPL_)DEMO_LED) += demo_led.o
 ```
 ### Kconfig demo_led
 ```Kconfig
