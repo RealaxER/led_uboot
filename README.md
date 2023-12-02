@@ -35,7 +35,7 @@ cd demo_led/
 ```
 ### Makefile demo_led
 ```make
-obj-$(CONFIG_$(SPL_TPL_)DEMO_LED) += demo_led.o
+obj-$(CONFIG_$(SPL_)DEMO_LED) += demo_led.o
 ```
 ### Kconfig demo_led
 ```Kconfig
