@@ -1,75 +1,36 @@
-From e0aa21496890561a760c78f4360569a27e1a7bcf Mon Sep 17 00:00:00 2001
-From: RealaxER <vlogdbh@gmail.com>
-Date: Sat, 2 Dec 2023 13:25:25 +0700
-Subject: [PATCH] led_uboot_bbb
-
----
- arch/arm/dts/am335x-boneblack.dts |  20 +++++
- cmd/Kconfig                       |   7 ++
- cmd/Makefile                      |   1 +
- cmd/demo_led.c                    | 102 +++++++++++++++++++++++
- configs/am335x_evm_defconfig      |   7 ++
- drivers/Kconfig                   |   1 +
- drivers/Makefile                  |   1 +
- drivers/demo_led/Kconfig          |   8 ++
- drivers/demo_led/Makefile         |   1 +
- drivers/demo_led/demo_led.c       | 132 ++++++++++++++++++++++++++++++
- tools/boot/bootm.c                |   1 +
- tools/boot/fdt_region.c           |   1 +
- tools/boot/image-cipher.c         |   1 +
- tools/boot/image-fit-sig.c        |   1 +
- tools/boot/image-fit.c            |   1 +
- tools/boot/image-host.c           |   1 +
- tools/boot/image.c                |   1 +
- 17 files changed, 287 insertions(+)
- create mode 100644 cmd/demo_led.c
- create mode 100644 drivers/demo_led/Kconfig
- create mode 100644 drivers/demo_led/Makefile
- create mode 100644 drivers/demo_led/demo_led.c
- create mode 100644 tools/boot/bootm.c
- create mode 100644 tools/boot/fdt_region.c
- create mode 100644 tools/boot/image-cipher.c
- create mode 100644 tools/boot/image-fit-sig.c
- create mode 100644 tools/boot/image-fit.c
- create mode 100644 tools/boot/image-host.c
- create mode 100644 tools/boot/image.c
-
 diff --git a/arch/arm/dts/am335x-boneblack.dts b/arch/arm/dts/am335x-boneblack.dts
-index e2ee8b8c..627f4250 100644
+index e2ee8b8c..c70b7bc9 100644
 --- a/arch/arm/dts/am335x-boneblack.dts
 +++ b/arch/arm/dts/am335x-boneblack.dts
-@@ -22,6 +22,26 @@
- 	oppnitro-1000000000 {
- 		opp-supported-hw = <0x06 0x0100>;
- 	};
-+	demo_leds {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&demo_leds>;
-+
-+		compatible = "demo-uboot-leds";
-+
-+		used_led@1 {
-+				label = "led:P1:14";
-+				gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;
-+				default-state = "on";
-+		};
-+	};
-+};
-+
+@@ -167,3 +167,22 @@
+ 		"NC",
+ 		"NC";
+ };
 +&am33xx_pinmux {
 +	demo_leds: demo_leds {
 +		pinctrl-single,pins = <
 +			0x38 (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpmc_ad14.gpio1_14 */
 +		>;
 +	};
- };
- 
- &gpio0 {
++};
++demo_leds {  
++		pinctrl-names = "default";  
++		pinctrl-0 = <&demo_leds>;  
++
++		compatible = "demo-uboot-leds";  
++  
++		used_led@1 {  
++				label = "led-1_14";  
++				gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;  
++				default-state = "off";  
++		};  
++};  
+\ No newline at end of file
 diff --git a/cmd/Kconfig b/cmd/Kconfig
-index 5e25e45f..cc251f46 100644
+index 5e25e45f..2f1d7abe 100644
 --- a/cmd/Kconfig
 +++ b/cmd/Kconfig
-@@ -1,5 +1,12 @@
+@@ -1,5 +1,11 @@
  menu "Command line interface"
  
 +config CMD_DEMO_LED
@@ -78,22 +39,21 @@ index 5e25e45f..cc251f46 100644
 +      Enable the 'demo_led' command which allows for control of LEDs. In
 +	  this case, it is P1.14.
 +
-+
  config CMDLINE
  	bool "Support U-Boot commands"
  	default y
 diff --git a/cmd/Makefile b/cmd/Makefile
-index 166c652d..c2c804e9 100644
+index 166c652d..3a1c342f 100644
 --- a/cmd/Makefile
 +++ b/cmd/Makefile
-@@ -14,6 +14,7 @@ obj-y += version.o
- # command
- obj-$(CONFIG_CMD_ACPI) += acpi.o
- obj-$(CONFIG_CMD_ADDRMAP) += addrmap.o
+@@ -48,6 +48,7 @@ obj-$(CONFIG_CMD_DATE) += date.o
+ obj-$(CONFIG_CMD_DEMO) += demo.o
+ obj-$(CONFIG_CMD_DM) += dm.o
+ obj-$(CONFIG_CMD_SOUND) += sound.o
 +obj-$(CONFIG_CMD_DEMO_LED) += demo_led.o
- obj-$(CONFIG_CMD_AES) += aes.o
- obj-$(CONFIG_CMD_AB_SELECT) += ab_select.o
- obj-$(CONFIG_CMD_ADC) += adc.o
+ ifdef CONFIG_POST
+ obj-$(CONFIG_CMD_DIAG) += diag.o
+ endif
 diff --git a/cmd/demo_led.c b/cmd/demo_led.c
 new file mode 100644
 index 00000000..22122b3c
@@ -204,14 +164,13 @@ index 00000000..22122b3c
 +);
 \ No newline at end of file
 diff --git a/configs/am335x_evm_defconfig b/configs/am335x_evm_defconfig
-index 33d0fb81..81f45ccc 100644
+index 33d0fb81..ea61b75d 100644
 --- a/configs/am335x_evm_defconfig
 +++ b/configs/am335x_evm_defconfig
-@@ -104,3 +104,10 @@ CONFIG_WDT=y
+@@ -104,3 +104,9 @@ CONFIG_WDT=y
  CONFIG_DYNAMIC_CRC_TABLE=y
  CONFIG_RSA=y
  CONFIG_LZO=y
-+
 +CONFIG_DM=y
 +CONFIG_DM_GPIO=y
 +CONFIG_LED=y  
@@ -220,17 +179,16 @@ index 33d0fb81..81f45ccc 100644
 +CONFIG_CMD_DEMO_LED=y  
 \ No newline at end of file
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index b26ca8cf..1aa5c55b 100644
+index b26ca8cf..7c4d792c 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
-@@ -3,6 +3,7 @@ menu "Device Drivers"
+@@ -1,5 +1,5 @@
+ menu "Device Drivers"
+-
++source "drivers/demo_led/Kconfig"
  source "drivers/core/Kconfig"
  
  # types of drivers sorted in alphabetical order
-+source "drivers/demo_led/Kconfig"
- 
- source "drivers/adc/Kconfig"
- 
 diff --git a/drivers/Makefile b/drivers/Makefile
 index 4e7cf284..7e731f2b 100644
 --- a/drivers/Makefile
@@ -239,11 +197,11 @@ index 4e7cf284..7e731f2b 100644
  endif
  
  obj-y += soc/
-+obj-$(CONFIG_$(SPL_)DEMO_LED) += demo_led/
++obj-$(CONFIG_$(SPL_TPL_)DEMO_LED) += demo_led/
 \ No newline at end of file
 diff --git a/drivers/demo_led/Kconfig b/drivers/demo_led/Kconfig
 new file mode 100644
-index 00000000..9deac8b1
+index 00000000..0512aa7a
 --- /dev/null
 +++ b/drivers/demo_led/Kconfig
 @@ -0,0 +1,8 @@
@@ -255,26 +213,27 @@ index 00000000..9deac8b1
 +        help
 +          This is just a demo to show how to simply control a led in u-boot.
 +endmenu
+\ No newline at end of file
 diff --git a/drivers/demo_led/Makefile b/drivers/demo_led/Makefile
 new file mode 100644
-index 00000000..bc03a366
+index 00000000..0c3d57c5
 --- /dev/null
 +++ b/drivers/demo_led/Makefile
 @@ -0,0 +1 @@
-+obj-$(CONFIG_$(SPL_TPL_)DEMO_LED) += demo_led.o
++obj-$(CONFIG_$(SPL_)DEMO_LED) += demo_led.o
+\ No newline at end of file
 diff --git a/drivers/demo_led/demo_led.c b/drivers/demo_led/demo_led.c
 new file mode 100644
-index 00000000..840d4ed8
+index 00000000..a690ad40
 --- /dev/null
 +++ b/drivers/demo_led/demo_led.c
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,131 @@
 +#include <common.h>
 +#include <dm.h>
 +#include <errno.h>
 +#include <led.h>
-+#include <log.h>
 +#include <malloc.h>
-+#include <asm/gpio.h>
++#include <asm-generic/gpio.h>
 +#include <dm/lists.h>
 +
 +struct led_gpio_priv {
@@ -400,56 +359,3 @@ index 00000000..840d4ed8
 +	.probe	= led_gpio_probe,
 +	.remove	= led_gpio_remove,
 +};
-\ No newline at end of file
-diff --git a/tools/boot/bootm.c b/tools/boot/bootm.c
-new file mode 100644
-index 00000000..31ddd95f
---- /dev/null
-+++ b/tools/boot/bootm.c
-@@ -0,0 +1 @@
-+#include <../boot/bootm.c>
-diff --git a/tools/boot/fdt_region.c b/tools/boot/fdt_region.c
-new file mode 100644
-index 00000000..1bb9c886
---- /dev/null
-+++ b/tools/boot/fdt_region.c
-@@ -0,0 +1 @@
-+#include <../boot/fdt_region.c>
-diff --git a/tools/boot/image-cipher.c b/tools/boot/image-cipher.c
-new file mode 100644
-index 00000000..5013afee
---- /dev/null
-+++ b/tools/boot/image-cipher.c
-@@ -0,0 +1 @@
-+#include <../boot/image-cipher.c>
-diff --git a/tools/boot/image-fit-sig.c b/tools/boot/image-fit-sig.c
-new file mode 100644
-index 00000000..9da06c71
---- /dev/null
-+++ b/tools/boot/image-fit-sig.c
-@@ -0,0 +1 @@
-+#include <../boot/image-fit-sig.c>
-diff --git a/tools/boot/image-fit.c b/tools/boot/image-fit.c
-new file mode 100644
-index 00000000..9168e119
---- /dev/null
-+++ b/tools/boot/image-fit.c
-@@ -0,0 +1 @@
-+#include <../boot/image-fit.c>
-diff --git a/tools/boot/image-host.c b/tools/boot/image-host.c
-new file mode 100644
-index 00000000..fb0ad568
---- /dev/null
-+++ b/tools/boot/image-host.c
-@@ -0,0 +1 @@
-+#include <../boot/image-host.c>
-diff --git a/tools/boot/image.c b/tools/boot/image.c
-new file mode 100644
-index 00000000..48a2e765
---- /dev/null
-+++ b/tools/boot/image.c
-@@ -0,0 +1 @@
-+#include <../boot/image.c>
--- 
-2.34.1
-
